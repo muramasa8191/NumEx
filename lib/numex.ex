@@ -13,13 +13,8 @@ defmodule NumEx do
 
   """
   def add(a, b) do
-    _add(a, b, [])
-  end
-  defp _add([], [], ans) do
-    ans
-  end
-  defp _add([h1 | t1], [h2 | t2], ans) do
-    _add(t1, t2, ans ++ [Float.floor(h1 + h2, 8)])
+    Enum.zip(a, b)
+    |> Enum.map(fn ({a, b}) -> a + b end)
   end
   def add_mul(aa, b) do
     aa |> Enum.map(&(add(&1, b)))
@@ -49,12 +44,10 @@ defmodule NumEx do
     aa |> Enum.map(&(_dot_row(&1, bbt, [])))
   end
   defp _dot_row(a, b, vec) do
-    b |> Enum.map(&(_dot_calc(a, &1, 0)))
+    b |> Enum.map(&(_dot_calc(a, &1)))
   end
-  defp _dot_calc([], _, res) do
-    res
-  end
-  defp _dot_calc([ha | ta], [hb | tb], res) do
-    _dot_calc(ta, tb, Float.floor(res + ha * hb, 8))
+  defp _dot_calc(a, b) do
+    Enum.zip(a, b)
+    |> Enum.reduce(0, fn ({a, b}, acc) -> Float.floor(acc + a * b, 8) end)
   end
 end
