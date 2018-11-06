@@ -22,13 +22,7 @@ defmodule NumEx do
     _add(t1, t2, ans ++ [Float.floor(h1 + h2, 8)])
   end
   def add_mul(aa, b) do
-    _add_mul(aa, b, [])
-  end
-  defp _add_mul([], _, res) do
-    res
-  end
-  defp _add_mul([ha | ta], b, res) do
-    _add_mul(ta, b, res ++ [add(ha, b)])
+    aa |> Enum.map(&(add(&1, b)))
   end
   def transpose(list) do
     _transpose(list, [])
@@ -39,7 +33,6 @@ defmodule NumEx do
   defp _transpose(list, res) do
     {vec, next} = _transpose_head(list, {[], []})
     _transpose(next, res ++ [vec])
-    # _transpose([], next)
   end
   defp _transpose_head([], result) do
     result
@@ -53,22 +46,10 @@ defmodule NumEx do
 
   def dot(aa, bb) do
     bbt = transpose(bb)
-    _dot(aa, bbt, [])
+    aa |> Enum.map(&(_dot_row(&1, bbt, [])))
   end
-  defp _dot([], _, res) do
-    res
-  end
-  defp _dot([ha | ta], bbt, res) do
-    IO.inspect(ha)
-    res = res ++ [_dot_row(ha, bbt, [])]
-    _dot(ta, bbt, res)
-  end
-  defp _dot_row(_, [], vec) do
-    vec
-  end
-  defp _dot_row(a, [hb | tb], vec) do
-    vec = vec ++ [_dot_calc(a, hb, 0)]
-    _dot_row(a, tb, vec)
+  defp _dot_row(a, b, vec) do
+    b |> Enum.map(&(_dot_calc(a, &1, 0)))
   end
   defp _dot_calc([], _, res) do
     res

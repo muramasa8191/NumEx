@@ -22,6 +22,6 @@ defmodule NumEx.Random do
   end
 
   defp _rand() do
-    Float.floor(:rand.uniform * :rand.uniform * 3.0, 8)
+    Float.floor(:rand.normal(0.0, 2.0), 8)
   end
 end
