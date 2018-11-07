@@ -19,31 +19,23 @@ defmodule NumEx do
   def add_mul(aa, b) do
     aa |> Enum.map(&(add(&1, b)))
   end
+
   def transpose(list) do
-    _transpose(list, [])
+    arr = []
+    arr = Stream.iterate([], &(&1++arr)) |> Enum.take(length(hd list))
+    list |> Enum.reduce(arr, fn (xx, arr) -> _transpose(xx, arr) end)
+    |> Enum.map(fn (x) -> Enum.reverse(x) end)
   end
-  defp _transpose([], res) do
-    res
-  end
-  defp _transpose(list, res) do
-    {vec, next} = _transpose_head(list, {[], []})
-    _transpose(next, res ++ [vec])
-  end
-  defp _transpose_head([], result) do
-    result
-  end
-  defp _transpose_head([[h | t] | tail], {res, next}) when t != [] do
-    _transpose_head(tail, {res ++ [h], next ++ [t]})
-  end
-  defp _transpose_head([[h | _] | tail], {res, next}) do
-    _transpose_head(tail, {res ++ [h], next})
+  defp _transpose(list, arr) do
+    list
+    |> Enum.reduce(arr, fn (x, arr) -> (tl arr)++[[x]++(hd arr)] end)
   end
 
   def dot(aa, bb) do
     bbt = transpose(bb)
-    aa |> Enum.map(&(_dot_row(&1, bbt, [])))
+    aa |> Enum.map(&(_dot_row(&1, bbt)))
   end
-  defp _dot_row(a, b, vec) do
+  defp _dot_row(a, b) do
     b |> Enum.map(&(_dot_calc(a, &1)))
   end
   defp _dot_calc(a, b) do
