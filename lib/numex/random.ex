@@ -1,26 +1,15 @@
 defmodule NumEx.Random do
+  def randn() do
+    _rand()
+  end
   def randn(col) do
-    _randn(col, [])
-  end
-  defp _randn(0, list) do
-    list
-  end
-  defp _randn(col, list) do
-    _randn(col - 1, [_rand()] ++ list)
+    res = []
+    Stream.repeatedly(fn -> [_rand()] ++ res end) |> Enum.take(col) |> List.flatten
   end
   def randn(row, col) do
-    _randn(row - 1, col, col, [[]])
+    List.duplicate([], row)
+    |> Enum.map(&(&1 ++ randn(col)))
   end
-  defp _randn(0, 0, _, list) do
-    list
-  end
-  defp _randn(row, 0, oricol, list) do
-    _randn(row - 1, oricol, oricol, [[]] ++ list)
-  end
-  defp _randn(row, col, oricol, [h | t]) do
-    _randn(row, col - 1, oricol, [[_rand()] ++ h] ++ t)
-  end
-
   defp _rand() do
     Float.floor(:rand.normal(0.0, 2.0), 8)
   end
