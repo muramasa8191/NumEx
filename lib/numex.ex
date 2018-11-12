@@ -20,11 +20,19 @@ defmodule NumEx do
     |> Enum.map(fn ({x, y}) -> x + y end)
   end
 
+  def mult(listA, listB) when is_list(hd listA) and is_list(hd listB) do
+    Enum.zip(listA, listB)
+    |> Enum.map(fn ({a, b}) -> mult(a, b) end)
+  end
   def mult(list, b) when is_list(hd list) do
     list |> Enum.map(&(mult(&1, b)))
   end
+  def mult(list, b) when is_list b do
+    Enum.zip(list, b) 
+    |> Enum.map(fn ({x, y}) -> Float.floor(x * y, 8) end)
+  end
   def mult(list, b) do
-    list |> Enum.map(&(&1 * b))
+    list |> Enum.map(&(Float.floor(&1 * b, 8)))
   end
   def transpose(list) do
     arr = List.duplicate([], length(hd list))
@@ -36,19 +44,21 @@ defmodule NumEx do
     |> Enum.reduce(arr, fn (x, arr) -> (tl arr)++[[x]++(hd arr)] end)
   end
 
-  def div(list, denom) when is_list(hd list) do
-    list
-    |> Enum.map(fn (xx) -> Enum.map(xx, fn(x) -> Float.floor(x / denom, 8) end) end)
+  def div_list(list, denom) when is_list(hd list) do
+    list |> Enum.map(&(div_list(&1, denom)))
   end
-  def div(list, denom) do
+  def div_list(list, denom) do
     list |> Enum.map(fn(x) -> Float.floor(x / denom, 8) end)
   end
 
   def sub(list, b) when is_list(hd list) do
     list |> Enum.map(fn (aa) -> sub(aa, b) end)
   end
-  def sub(a, b) do
+  def sub(a, b) when is_list b do
     Enum.zip(a, b) |> Enum.map(fn {x, y} -> Float.floor(x - y, 8) end)
+  end
+  def sub(a, b) do
+    a |> Enum.map(&(&1 - b))
   end
 
   def dot(aa, bb) do
@@ -88,5 +98,27 @@ defmodule NumEx do
   end
   def zeros(n, dim, :float) do
     List.duplicate(List.duplicate(0.0, n), dim)
+  end
+
+  def one_hot(n, t) do
+    0..n-1
+    |> Enum.to_list
+    |> Enum.map(&(if &1 != t, do: 0, else: 1))
+  end
+
+  def argmax(list) when is_list(hd list) do
+    Enum.map(list, &(argmax(&1)))
+  end
+  def argmax(list) do
+    elem(list |> Enum.with_index 
+              |> Enum.max_by(&(elem(&1, 0))), 1)
+  end
+
+  def softmax(x) when is_list (hd x) do
+    x |> Enum.map(&(softmax(&1)))
+  end
+  def softmax(x) do
+    x = sub(x, Enum.max(x)) |> Enum.map(&(:math.exp(&1))) # do sub to avoid overflow
+    div_list(x, Enum.sum(x))
   end
 end
