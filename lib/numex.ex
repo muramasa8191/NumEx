@@ -51,6 +51,10 @@ defmodule NumEx do
     list |> Enum.map(fn(x) -> Float.floor(x / denom, 8) end)
   end
 
+  def sub(listA, listB) when is_list(hd listA) and is_list(hd listB) do
+    Enum.zip(listA, listB)
+    |> Enum.map(fn ({as, bs}) -> sub(as, bs) end)
+  end
   def sub(list, b) when is_list(hd list) do
     list |> Enum.map(fn (aa) -> sub(aa, b) end)
   end
@@ -74,8 +78,7 @@ defmodule NumEx do
   end
 
   def sum(mat) do
-    arr = List.duplicate(0.0, length(hd mat))
-    mat |> Enum.reduce(arr, fn(x, arr) -> add(arr, x) end)
+    mat |> Enum.map(&(Enum.sum(&1)))
   end
 
   def repeat(list, n) when is_list(hd list) do
@@ -93,6 +96,12 @@ defmodule NumEx do
     List.duplicate([0.0], length(list))
   end
 
+  def zeros(n, :int) do
+    List.duplicate(0, n)
+  end
+  def zeros(n, :float) do
+    List.duplicate(0.0, n)
+  end
   def zeros(n, dim, :int) do
     List.duplicate(List.duplicate(0, n), dim)
   end
@@ -120,5 +129,9 @@ defmodule NumEx do
   def softmax(x) do
     x = sub(x, Enum.max(x)) |> Enum.map(&(:math.exp(&1))) # do sub to avoid overflow
     div_list(x, Enum.sum(x))
+  end
+
+  def avg(list) do
+    Enum.sum(list) / length(list)
   end
 end
