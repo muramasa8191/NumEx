@@ -111,7 +111,6 @@ defmodule NumEx do
 
   def one_hot(n, t) do
     0..n-1
-    |> Enum.to_list
     |> Enum.map(&(if &1 != t, do: 0, else: 1))
   end
 
