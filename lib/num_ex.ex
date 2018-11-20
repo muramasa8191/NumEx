@@ -13,7 +13,8 @@ defmodule NumEx do
 
   """
   def add(list, b) when is_list(hd list) do
-    list |> Enum.map(&(add(&1, b)))
+    list 
+    |> Enum.map(&(add(&1, b)))
   end
   def add(list, b) do
     Enum.zip(list, b)
@@ -21,15 +22,18 @@ defmodule NumEx do
   end
 
   def mult(listA, listB) when is_list(hd listA) and is_list(hd listB) do
+    # {res, _} =
     Enum.zip(listA, listB)
-    |> Enum.map(fn ({a, b}) -> mult(a, b) end)
+    |> Flow.from_enumerable(max_demand: 1)
+    |> Flow.map(fn {a, b} -> mult(a, b) end)
+    |> Enum.to_list
+    # |> Enum.map(fn ({a, b}) -> mult(a, b) end)
   end
   def mult(list, b) when is_list(hd list) do
     list |> Enum.map(&(mult(&1, b)))
   end
   def mult(list, b) when is_list b do
-    Enum.zip(list, b) 
-    |> Enum.map(fn ({x, y}) -> Float.floor(x * y, 8) end)
+    Enum.zip(list, b) |> Enum.map(fn ({x, y}) -> Float.floor(x * y, 8) end)
   end
   def mult(list, b) do
     list |> Enum.map(&(Float.floor(&1 * b, 8)))
@@ -45,10 +49,12 @@ defmodule NumEx do
   end
 
   def div_list(list, denom) when is_list(hd list) do
-    list |> Enum.map(&(div_list(&1, denom)))
+    list 
+    |> Enum.map(&(div_list(&1, denom)))
   end
   def div_list(list, denom) do
-    list |> Enum.map(fn(x) -> Float.floor(x / denom, 8) end)
+    list 
+    |> Enum.map(fn(x) -> Float.floor(x / denom, 8) end)
   end
 
   def sub(listA, listB) when is_list(hd listA) and is_list(hd listB) do
@@ -59,7 +65,8 @@ defmodule NumEx do
     list |> Enum.map(fn (aa) -> sub(aa, b) end)
   end
   def sub(a, b) when is_list b do
-    Enum.zip(a, b) |> Enum.map(fn {x, y} -> Float.floor(x - y, 8) end)
+    Enum.zip(a, b) 
+    |> Enum.map(fn {x, y} -> Float.floor(x - y, 8) end)
   end
   def sub(a, b) do
     a |> Enum.map(&(&1 - b))
@@ -67,7 +74,14 @@ defmodule NumEx do
 
   def dot(aa, bb) do
     bbt = transpose(bb)
-    aa |> Enum.map(&(_dot_row(&1, bbt)))
+    {res, _} =
+      aa
+      |> Enum.with_index
+      |> Flow.from_enumerable(max_demand: 1)
+      |> Flow.map(fn {list, idx} -> {_dot_row(list, bbt), idx} end)
+      |> Enum.sort_by(&elem(&1, 1))
+      |> Enum.unzip
+    res
   end
   defp _dot_row(a, b) do
     b |> Enum.map(&(_dot_calc(a, &1)))
@@ -78,7 +92,8 @@ defmodule NumEx do
   end
 
   def sum(mat) do
-    mat |> Enum.map(&(Enum.sum(&1)))
+    mat 
+    |> Enum.map(&(Enum.sum(&1)))
   end
 
   def repeat(list, n) when is_list(hd list) do
