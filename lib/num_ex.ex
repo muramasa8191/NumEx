@@ -3,6 +3,112 @@ defmodule NumEx do
   Documentation for Numex.
   """
 
+  defstruct l: []
+  @type t :: %NumEx{l: list}
+
+  defimpl Inspect do
+    import Inspect.Algebra
+    def inspect(%NumEx{l: arr}, ops) do
+      concat(["array(", to_doc(arr, ops), ")"])
+    end
+  end
+
+  def array(list) do
+    %NumEx{l: list}
+  end
+
+  import Kernel, except: [+: 2, -: 2, /: 2, *: 2]
+  # override operations do import to make it available
+  @spec left + NumEx.t :: NumEx.t when left: NumEx.t
+  def left + right when is_map(left) do
+    array(add(left.l, right.l))
+  end
+  @doc guard: true
+  @spec integer + integer :: integer
+  @spec float + float :: float
+  @spec integer + float :: float
+  @spec float + integer :: float
+  def left + right do
+    :erlang.+(left, right)
+  end
+
+  @spec left - NumEx.t :: NumEx.t when left: NumEx.t
+  def left - right when is_map(left) do
+    array(sub(left.l, right.l))
+  end
+  @doc guard: true
+  @spec integer - integer :: integer
+  @spec float - float :: float
+  @spec integer - float :: float
+  @spec float - integer :: float
+  def left - right do
+    :erlang.-(left, right)
+  end
+
+  @spec left * NumEx.t :: NumEx.t when left: NumEx.t
+  def left * right when is_map(left) do
+    array(mult(left.l, right.l))
+  end
+  @doc guard: true
+  @spec integer * integer :: integer
+  @spec float * float :: float
+  @spec integer * float :: float
+  @spec float * integer :: float
+  def left * right do
+    :erlang.*(left, right)
+  end
+
+  @spec left / NumEx.t :: float when left: NumEx.t
+  def left / right when is_map(left) do
+    array(div_list(left.l, right))
+  end
+  @doc guard: true
+  @spec number / number :: float
+  def left / right do
+    :erlang./(left, right)
+  end
+
+  defimpl Enumerable, for: NumEx do
+    def count(%NumEx{l: arr}) do
+      { :ok, length(arr)}
+    end
+    def member?(%NumEx{l: arr}, val) when is_list(hd arr) do
+      res =
+       arr
+        |> Flow.from_enumerable
+        |> Flow.map(fn x -> Enum.any?(x, fn x -> x == val end) end)
+        |> Enum.any?
+      { :ok, res }
+    end
+    def member?(%NumEx{l: arr}, val) do
+      { :ok, Enum.any?(arr, fn x -> x == val end) }
+    end
+    def reduce(%NumEx{l: arr}, acc, func) when is_list(hd arr) do
+      func_wrap = fn x, {:cont, a} -> func.(x, a) end
+      res =
+        arr
+        |> Enum.map(
+          fn vec -> 
+            vec = Enum.reverse(vec)
+            {_, res} = :lists.foldl(func_wrap, acc, vec)
+            res 
+          end)
+        {:cont, NumEx.array(res)}
+      end
+    def reduce(%NumEx{l: arr}, acc, func) when is_list(arr) do
+      func_wrap = fn x, {:cont, a} -> func.(x, a) end
+      {:cont, res} = :lists.foldl(func_wrap, acc, arr)
+      {:cont, NumEx.array(res)}
+    end
+    import Enumerable, except: [map: 3]
+    def map(%NumEx{l: enumerable}, fun) do
+      IO.inspect(enumerable)
+      enumerable
+      |> Enum.reduce([], fn x, acc -> [fun.(x) | acc] end)
+      |> Enum.reverse()
+    end
+  end
+
   @doc """
   Addition of two lists
 
@@ -38,10 +144,13 @@ defmodule NumEx do
   def mult(list, b) do
     list |> Enum.map(&(Float.floor(&1 * b, 8)))
   end
-  def transpose(list) do
+  def transpose(list) when is_list(hd list) do
     arr = List.duplicate([], length(hd list))
     list |> Enum.reduce(arr, fn (xx, arr) -> _transpose(xx, arr) end)
     |> Enum.map(fn (x) -> Enum.reverse(x) end)
+  end
+  def transpose(list) do
+    _transpose(list, List.duplicate([], length(list)))
   end
   defp _transpose(list, arr) do
     list
@@ -72,7 +181,7 @@ defmodule NumEx do
     a |> Enum.map(&(&1 - b))
   end
 
-  def dot(aa, bb) do
+  def dot(aa, bb) when is_list(hd aa) do
     bbt = transpose(bb)
     {res, _} =
       aa
@@ -83,6 +192,9 @@ defmodule NumEx do
       |> Enum.unzip
     res
   end
+  def dot(a, b) do
+    _dot_calc(a, b)
+  end
   defp _dot_row(a, b) do
     b |> Enum.map(&(_dot_calc(a, &1)))
   end
@@ -92,10 +204,21 @@ defmodule NumEx do
   end
 
   def sum(mat) do
+    mat
+    |> Flow.from_enumerable(max_demand: 1)
+    |> Flow.map(&sum(&1, 1))
+    |> Enum.sum
+  end
+  def sum(mat, 0) do
+    sum(transpose(mat), 1)
+  end
+  def sum(mat, 1) when is_list(hd mat) do
     mat 
     |> Enum.map(&(Enum.sum(&1)))
   end
-
+  def sum(vec, 1) do
+    vec |> Enum.sum
+  end
   def repeat(list, n) when is_list(hd list) do
     List.duplicate((hd list), n)
   end
@@ -106,6 +229,10 @@ defmodule NumEx do
   def zeros_like(list) when is_list(hd list) do
     list |> Enum.reduce([], fn (x, acc) 
       -> [List.duplicate(0.0, length(x))] ++ acc end)
+  end
+  def zeros_like(list) when is_list(hd list) do
+    Enum.reverse(list)
+    |> Enum.reduce([], fn row, arr -> [zeros_like(row)] ++ arr end)
   end
   def zeros_like(list) do
     List.duplicate([0.0], length(list))
@@ -147,5 +274,25 @@ defmodule NumEx do
 
   def avg(list) do
     Enum.sum(list) / length(list)
+  end
+
+  def sqrt(x) when is_list(hd x) do
+    x |> Enum.map(&sqrt(&1))
+  end
+  def sqrt(x) when is_list(x) do
+    x |> Enum.map(&:math.sqrt(&1))
+  end
+  def sqrt(x) do
+    :math.sqrt(x)
+  end
+
+  def pow(x, n) when is_list(hd x) do
+    x |> Enum.map(&pow(&1, n))
+  end
+  def pow(x, n) when is_list(x) do
+    x |> Enum.map(&:math.pow(&1, n))
+  end
+  def pow(x, n) do
+    :math.pow(x, n)
   end
 end

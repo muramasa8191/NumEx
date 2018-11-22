@@ -1,8 +1,8 @@
 defmodule NumexTest do
   use ExUnit.Case
-  doctest Numex
+  doctest NumEx
 
   test "greets the world" do
-    assert Numex.hello() == :world
+    assert NumEx.hello() == :world
   end
 end
