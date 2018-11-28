@@ -3,7 +3,7 @@ defmodule NumEx do
   Documentation for Numex.
   """
 
-  defstruct l: []
+  defstruct l: [], shape: nil
   @type t :: %NumEx{l: list}
 
   defimpl Inspect do
@@ -33,8 +33,8 @@ defmodule NumEx do
   end
 
   @spec left - NumEx.t :: NumEx.t when left: NumEx.t
-  def left - right when is_map(left) do
-    array(sub(left.l, right.l))
+  def left - right when is_map(left) or is_map(right) do
+    array(_sub(left, right))
   end
   @doc guard: true
   @spec integer - integer :: integer
@@ -47,7 +47,7 @@ defmodule NumEx do
 
   @spec left * NumEx.t :: NumEx.t when left: NumEx.t
   def left * right when is_map(left) do
-    array(mult(left.l, right.l))
+    array(_mult(left, right))
   end
   @doc guard: true
   @spec integer * integer :: integer
@@ -84,28 +84,25 @@ defmodule NumEx do
       { :ok, Enum.any?(arr, fn x -> x == val end) }
     end
     def reduce(%NumEx{l: arr}, acc, func) when is_list(hd arr) do
-      func_wrap = fn x, {:cont, a} -> func.(x, a) end
+      func_wrap = fn x, {state, a} -> if state == :cont, do: func.(x, a), else: {:cont, [x]++a} end
       res =
         arr
+        |> Enum.reverse
         |> Enum.map(
           fn vec -> 
             vec = Enum.reverse(vec)
             {_, res} = :lists.foldl(func_wrap, acc, vec)
             res 
           end)
-        {:cont, NumEx.array(res)}
+        {:cont, res}
       end
     def reduce(%NumEx{l: arr}, acc, func) when is_list(arr) do
-      func_wrap = fn x, {:cont, a} -> func.(x, a) end
-      {:cont, res} = :lists.foldl(func_wrap, acc, arr)
-      {:cont, NumEx.array(res)}
+      func_wrap = fn x, {state, a} -> if state == :cont, do: func.(x, a), else: {:cont, [x]++a} end
+      :lists.foldl(func_wrap, acc, arr)
     end
-    import Enumerable, except: [map: 3]
-    def map(%NumEx{l: enumerable}, fun) do
-      IO.inspect(enumerable)
-      enumerable
-      |> Enum.reduce([], fn x, acc -> [fun.(x) | acc] end)
-      |> Enum.reverse()
+    
+    def slice(%NumEx{l: arr}) do
+      {:ok, length(arr), &Enumerable.List.slice(arr, &1, &2)}
     end
   end
 
@@ -127,13 +124,14 @@ defmodule NumEx do
     |> Enum.map(fn ({x, y}) -> x + y end)
   end
 
+  defp _mult(nearray1, nearray2) when is_map(nearray1) do
+    mult(nearray1.l, nearray2.l)
+  end
   def mult(listA, listB) when is_list(hd listA) and is_list(hd listB) do
-    # {res, _} =
+    res =
     Enum.zip(listA, listB)
-    |> Flow.from_enumerable(max_demand: 1)
-    |> Flow.map(fn {a, b} -> mult(a, b) end)
-    |> Enum.to_list
-    # |> Enum.map(fn ({a, b}) -> mult(a, b) end)
+    |> Enum.map(fn ({a, b}) -> mult(a, b) end)
+    res
   end
   def mult(list, b) when is_list(hd list) do
     list |> Enum.map(&(mult(&1, b)))
@@ -143,6 +141,9 @@ defmodule NumEx do
   end
   def mult(list, b) do
     list |> Enum.map(&(Float.floor(&1 * b, 8)))
+  end
+  def transpose(nearray) when is_map(nearray) do
+    array(transpose(nearray.l))
   end
   def transpose(list) when is_list(hd list) do
     arr = List.duplicate([], length(hd list))
@@ -166,21 +167,39 @@ defmodule NumEx do
     |> Enum.map(fn(x) -> Float.floor(x / denom, 8) end)
   end
 
+  defp _sub(nearray1, nearray2) when is_map(nearray1) and is_map(nearray2) do
+    sub(nearray1.l, nearray2.l)
+  end
+  defp _sub(nearray1, listB) when is_map(nearray1) do
+    sub(nearray1.l, listB)
+  end
+  defp _sub(listA, nearray) when is_map(nearray) do
+    sub(listA, nearray.l)
+  end
   def sub(listA, listB) when is_list(hd listA) and is_list(hd listB) do
     Enum.zip(listA, listB)
     |> Enum.map(fn ({as, bs}) -> sub(as, bs) end)
   end
   def sub(list, b) when is_list(hd list) do
-    list |> Enum.map(fn (aa) -> sub(aa, b) end)
+    list |> Enum.map(&sub(&1, b))
   end
-  def sub(a, b) when is_list b do
+  def sub(a, list) when is_list(hd list) do
+    list |> Enum.map(&sub(a, &1))
+  end
+  def sub(a, b) when is_list(a) and is_list(b) do
     Enum.zip(a, b) 
     |> Enum.map(fn {x, y} -> Float.floor(x - y, 8) end)
+  end
+  def sub(a, b) when is_list(b) do
+    b |> Enum.map(&(a - &1))
   end
   def sub(a, b) do
     a |> Enum.map(&(&1 - b))
   end
 
+  def dot(aa, bb) when is_map(aa) do
+    array(dot(aa.l, bb.l))
+  end
   def dot(aa, bb) when is_list(hd aa) do
     bbt = transpose(bb)
     {res, _} =
@@ -208,6 +227,9 @@ defmodule NumEx do
     |> Flow.from_enumerable(max_demand: 1)
     |> Flow.map(&sum(&1, 1))
     |> Enum.sum
+  end
+  def sum(nearray, axis) when is_map(nearray) do
+    array(sum(nearray.l, axis))
   end
   def sum(mat, 0) do
     sum(transpose(mat), 1)
@@ -264,6 +286,9 @@ defmodule NumEx do
               |> Enum.max_by(&(elem(&1, 0))), 1)
   end
 
+  def softmax(nearray) when is_map(nearray) do
+    array(softmax(nearray.l))
+  end
   def softmax(x) when is_list (hd x) do
     x |> Enum.map(&(softmax(&1)))
   end
