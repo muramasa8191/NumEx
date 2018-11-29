@@ -13,4 +13,13 @@ defmodule NumEx.Random do
   defp _rand() do
     Float.floor(:rand.normal(0.0, 2.0), 8)
   end
+
+  def normal(mean, var, row, col) do
+    List.duplicate([], row) 
+    |> Enum.map(&(&1++Stream.repeatedly(
+      fn -> [:rand.normal(mean, var)] end) 
+        |> Enum.take(col) 
+        |> List.flatten)
+    )
+  end
 end

@@ -14,7 +14,7 @@ defmodule Numex.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger]
+      mod: { NumEx, []}
     ]
   end
 
@@ -22,7 +22,6 @@ defmodule Numex.MixProject do
   defp deps do
     [
       {:flow, "~> 0.14.3"},
-      # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"},
     ]
   end
 end
