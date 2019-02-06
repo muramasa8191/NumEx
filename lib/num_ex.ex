@@ -202,14 +202,12 @@ defmodule NumEx do
   end
   def dot(aa, bb) when is_list(hd aa) do
     bbt = transpose(bb)
-    {res, _} =
-      aa
-      |> Enum.with_index
-      |> Flow.from_enumerable(max_demand: 1)
-      |> Flow.map(fn {list, idx} -> {_dot_row(list, bbt), idx} end)
-      |> Enum.sort_by(&elem(&1, 1))
-      |> Enum.unzip
-    res
+    aa
+    |> Enum.with_index
+    |> Flow.from_enumerable(max_demand: 1)
+    |> Flow.map(fn {list, idx} -> {_dot_row(list, bbt), idx} end)
+    |> Enum.sort_by(&elem(&1, 1))
+    |> Enum.map(&elem(&1, 0))
   end
   def dot(a, b) do
     _dot_calc(a, b)
@@ -232,8 +230,21 @@ defmodule NumEx do
     array(sum(nearray.l, axis))
   end
   def sum(mat, 0) do
-    sum(transpose(mat), 1)
+    # sum(transpose(mat), 1)
+    _sum(mat, [])
   end
+  defp _sum(mat, res) when length(hd mat) > 0 do
+    {s, mat} =
+    mat |> Enum.reduce({0, []},
+           fn vec, {acc, arr} ->
+            {acc + (hd vec), [(tl vec)]++arr}
+           end)
+    _sum(mat, [s]++res)
+  end
+  defp _sum(_mat, sums) do 
+    Enum.reverse sums
+  end
+ 
   def sum(mat, 1) when is_list(hd mat) do
     mat 
     |> Enum.map(&(Enum.sum(&1)))
