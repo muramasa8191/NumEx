@@ -231,6 +231,7 @@ defmodule NumEx do
   end
   def sum(mat, 0) do
     # sum(transpose(mat), 1)
+    IO.puts("new sum 0")
     _sum(mat, [])
   end
   defp _sum(mat, res) when length(hd mat) > 0 do
