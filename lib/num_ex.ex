@@ -115,6 +115,12 @@ defmodule NumEx do
       [4.0, 6.0]
 
   """
+  def add(list_a, list_b) when is_list(list_a) and is_list(list_b) do
+    Enum.zip(list_a, list_b)
+    |> Enum.map(fn {a, b} -> Enum.zip(a, b)
+                             |> Enum.map(fn {x, y} -> x + y end)
+       end)
+  end
   def add(list, b) when is_list(hd list) do
     list 
     |> Enum.map(&(add(&1, b)))
@@ -127,6 +133,20 @@ defmodule NumEx do
   defp _mult(nearray1, nearray2) when is_map(nearray1) do
     mult(nearray1.l, nearray2.l)
   end
+
+  @doc """
+  Multiplication for arrays
+
+  ## Examples
+
+      iex> NumEx.mult([[1, 2], [3, 4]], [[5, 6], [7, 8]])
+      [[5, 12], [21, 32]]
+      iex> NumEx.mult([[1, 2], [3, 4]], [5, 6])
+      [[5, 12], [15, 24]]
+      iex> NumEx.mult([1, 2], 10)
+      [10, 20]
+
+  """
   def mult(listA, listB) when is_list(hd listA) and is_list(hd listB) do
     res =
     Enum.zip(listA, listB)
@@ -137,11 +157,25 @@ defmodule NumEx do
     list |> Enum.map(&(mult(&1, b)))
   end
   def mult(list, b) when is_list b do
-    Enum.zip(list, b) |> Enum.map(fn ({x, y}) -> Float.floor(x * y, 8) end)
+    Enum.zip(list, b) |> Enum.map(fn ({x, y}) -> x * y end)
   end
   def mult(list, b) do
-    list |> Enum.map(&(Float.floor(&1 * b, 8)))
+    list |> Enum.map(&(&1 * b))
   end
+
+  @doc """
+  Transpose
+
+  ## Examples
+
+      iex> NumEx.transpose([[1, 2], [3, 4]])
+      [[1, 3], [2, 4]]
+      iex> NumEx.transpose([1, 2])
+      [[1], [2]]
+      iex> NumEx.transpose([[1], [2]])
+      [[1, 2]]
+
+  """
   def transpose(nearray) when is_map(nearray) do
     array(transpose(nearray.l))
   end
@@ -158,13 +192,24 @@ defmodule NumEx do
     |> Enum.reduce(arr, fn (x, arr) -> (tl arr)++[[x]++(hd arr)] end)
   end
 
+  @doc """
+  Division for arrays
+
+  ## Examples
+
+      iex> NumEx.div_list([[2, 4], [6, 8]], 2)
+      [[1.0, 2.0], [3.0, 4.0]]
+      iex> NumEx.div_list([1.0, 2.0], 2)
+      [0.5, 1.0]
+
+  """
   def div_list(list, denom) when is_list(hd list) do
     list 
     |> Enum.map(&(div_list(&1, denom)))
   end
   def div_list(list, denom) do
     list 
-    |> Enum.map(fn(x) -> Float.floor(x / denom, 8) end)
+    |> Enum.map(fn(x) -> x / denom end)
   end
 
   defp _sub(nearray1, nearray2) when is_map(nearray1) and is_map(nearray2) do
@@ -230,8 +275,6 @@ defmodule NumEx do
     array(sum(nearray.l, axis))
   end
   def sum(mat, 0) do
-    # sum(transpose(mat), 1)
-    IO.puts("new sum 0")
     _sum(mat, [])
   end
   defp _sum(mat, res) when length(hd mat) > 0 do
