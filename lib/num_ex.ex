@@ -23,7 +23,7 @@ defmodule NumEx do
   def left + right when is_map(left) do
     array(add(left.l, right.l))
   end
-  @doc guard: true
+
   @spec integer + integer :: integer
   @spec float + float :: float
   @spec integer + float :: float
@@ -36,7 +36,7 @@ defmodule NumEx do
   def left - right when is_map(left) or is_map(right) do
     array(_sub(left, right))
   end
-  @doc guard: true
+
   @spec integer - integer :: integer
   @spec float - float :: float
   @spec integer - float :: float
@@ -49,7 +49,7 @@ defmodule NumEx do
   def left * right when is_map(left) do
     array(_mult(left, right))
   end
-  @doc guard: true
+
   @spec integer * integer :: integer
   @spec float * float :: float
   @spec integer * float :: float
@@ -62,7 +62,7 @@ defmodule NumEx do
   def left / right when is_map(left) do
     array(div_list(left.l, right))
   end
-  @doc guard: true
+
   @spec number / number :: float
   def left / right do
     :erlang./(left, right)
@@ -115,15 +115,15 @@ defmodule NumEx do
       [4.0, 6.0]
 
   """
+  def add(list, b) when is_list(hd list) do
+    list 
+    |> Enum.map(&(add(&1, b)))
+  end
   def add(list_a, list_b) when is_list(list_a) and is_list(list_b) do
     Enum.zip(list_a, list_b)
     |> Enum.map(fn {a, b} -> Enum.zip(a, b)
                              |> Enum.map(fn {x, y} -> x + y end)
        end)
-  end
-  def add(list, b) when is_list(hd list) do
-    list 
-    |> Enum.map(&(add(&1, b)))
   end
   def add(list, b) do
     Enum.zip(list, b)
