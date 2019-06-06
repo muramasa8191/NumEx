@@ -115,15 +115,23 @@ defmodule NumEx do
       [4.0, 6.0]
 
   """
-  def add(list, b) when is_list(hd list) do
-    list 
-    |> Enum.map(&(add(&1, b)))
+  def add(num_a, num_b) when is_map(num_a) do
+    add(num_a.l, num_b.l)
+  end
+  def add(list_a, list_b) when is_list(hd list_a) and is_list(list_b) do
+    list_a
+    |>Enum.map(fn a ->
+      Enum.zip(a, list_b)
+      |> Enum.map(fn {x, y} -> x + y end)
+    end)
   end
   def add(list_a, list_b) when is_list(list_a) and is_list(list_b) do
     Enum.zip(list_a, list_b)
-    |> Enum.map(fn {a, b} -> Enum.zip(a, b)
-                             |> Enum.map(fn {x, y} -> x + y end)
-       end)
+    |> Enum.map(fn {x, y} -> x + y end)
+  end
+  def add(list, b) when is_list(hd list) do
+    list 
+    |> Enum.map(&(add(&1, b)))
   end
   def add(list, b) do
     Enum.zip(list, b)
